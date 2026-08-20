@@ -8,7 +8,32 @@ import redis
 
 # Connect to Redis
 # Decode_responses=True ensures we get normal Python strings back, not bytes
-redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+# redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+#mimicing this 
+import time
+
+# --- IN-MEMORY REDIS MOCK FOR LOCAL DEVELOPMENT & TESTING ---
+class InMemoryRedis:
+    """Mimics basic Redis key-value storage and TTL expiration in pure Python."""
+    def __init__(self):
+        self._store = {}
+
+    def set(self, key: str, value: str, ex: int | None = None) -> bool:
+        expire_at = (time.time() + ex) if ex else None
+        self._store[key] = (value, expire_at)
+        return True
+
+    def get(self, key: str) -> str | None:
+        if key not in self._store:
+            return None
+        value, expire_at = self._store[key]
+        if expire_at and time.time() > expire_at:
+            del self._store[key]
+            return None
+        return value
+
+# Use the mock directly
+redis_client = InMemoryRedis()
 
 app = FastAPI()
 
