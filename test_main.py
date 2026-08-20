@@ -105,7 +105,9 @@ def test_users_me_rejects_refresh_token(client, login_tokens):
     assert response.json()["detail"] == "Not an access token"
 
 
-def test_refresh_with_valid_refresh_token_returns_new_access_token(client, login_tokens):
+def test_refresh_with_valid_refresh_token_returns_new_access_token(
+    client, login_tokens
+):
     _, refresh_token = login_tokens
 
     response = client.post(
@@ -148,7 +150,8 @@ def test_refresh_rejects_access_token(client, login_tokens):
     )
 
     assert response.status_code == 401
-    assert response.json()["detail"] == "Invalid token type. Expected a refresh token."
+    expected = "Invalid token type. Expected a refresh token."
+    assert response.json()["detail"] == expected
 
 
 def test_logout_revokes_access_token(client, login_tokens):
@@ -167,4 +170,5 @@ def test_logout_revokes_access_token(client, login_tokens):
     )
 
     assert me_response.status_code == 401
-    assert me_response.json()["detail"] == "This token has been revoked (logged out)."
+    expected_revoked = "This token has been revoked (logged out)."
+    assert me_response.json()["detail"] == expected_revoked

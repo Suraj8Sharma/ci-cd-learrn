@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta, timezone
+import os
 import bcrypt
 import jwt
 
-SECRET_KEY = "my_super_secret_key_for_development_only"
+# Read secret from environment to avoid committing secrets to source control.
+SECRET_KEY = os.getenv("SECRET_KEY", "CHANGE_ME_DO_NOT_USE_IN_PROD")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -15,9 +17,11 @@ def verify_password(plain_password, hashed_password):
         return False
 
     try:
-        if len(str(plain_password).encode("utf-8")) > 72:
+        pw_bytes = str(plain_password).encode("utf-8")
+        hashed_bytes = str(hashed_password).encode("utf-8")
+        if len(pw_bytes) > 72:
             return False
-        return bcrypt.checkpw(str(plain_password).encode("utf-8"), str(hashed_password).encode("utf-8"))
+        return bcrypt.checkpw(pw_bytes, hashed_bytes)
     except ValueError:
         return False
 
@@ -27,7 +31,9 @@ def create_access_token(data: dict):
     to_encode = data.copy()
 
     # Set the expiration time
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(
+        minutes=ACCESS_TOKEN_EXPIRE_MINUTES
+    )
     to_encode.update({"exp": expire})
 
     # Sign the JWT using our SECRET_KEY and the HS256 algorithm
