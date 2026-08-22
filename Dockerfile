@@ -1,10 +1,10 @@
 # Multistage Dockerfile for the FastAPI auth example
-# Builder: install build deps, create venv, install deps and run tests
+# Builder: install build deps, create venv, install deps
 FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
-# Install build tools needed for some wheels (bcrypt, etc.)
+# 1. Install build tools needed for some wheels (bcrypt, etc.)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
@@ -12,35 +12,33 @@ RUN apt-get update \
         libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
-
-# Create and activate virtualenv, install runtime + test deps
-RUN python -m venv /o
-# Copy application sources
-COPY . /apppt/venv
+# 2. Create and activate virtualenv
+RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
+
+# 3. Upgrade pip and install runtime dependencies
 RUN pip install --upgrade pip
-# Install only runtime dependencies in the builder. Tests run in CI, not in
-# the image build.
 RUN pip install --no-cache-dir \
     fastapi[all] uvicorn[standard] pyjwt bcrypt python-multipart redis
 
+# 4. Copy application sources
+COPY . /app
 
+# ---------------------------------------------------------
 # Final: lightweight runtime image which reuses the built venv
+# ---------------------------------------------------------
 FROM python:3.12-slim
 
 WORKDIR /app
 
-# Copy the virtualenv from the builder stage and application files
+# 5. Copy the virtualenv from the builder stage and application files
 COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder /app /app
 
+# 6. Make sure the final stage also uses the virtual environment
 ENV PATH="/opt/venv/bin:$PATH"
-
-# Optional: non-root user can be added here for security
-# RUN useradd -m appuser && chown -R appuser /app
-# USER appuser
 
 EXPOSE 8000
 
-# Run Uvicorn (adjust host/port as needed)
+# Run Uvicorn 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
