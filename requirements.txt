@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+pydantic
+pyjwt
+bcrypt
+python-multipart
+redis
+pytest
+httpx
